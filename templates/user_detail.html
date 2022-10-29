@@ -47,12 +47,12 @@
 
       <p>
         <label for="user_level_access">
-          <input type="radio" id="user_level_access" name="access_lvl" value="1" {% if form.access.data == 1 %} checked {% endif %}> User access
+          <input type="radio" id="user_level_access" name="access_lvl" value="1" {% if form.isadmin.data == 1 %} checked {% endif %}> User access
         </label>
       </p>
       <p>
         <label for="admin_level_access">
-          <input type="radio" id="admin_level_access" name="access_lvl" value="2" {% if form.access.data == 2 %} checked {% endif %}> Admin access
+          <input type="radio" id="admin_level_access" name="access_lvl" value="2" {% if form.isadmin.data == 2 %} checked {% endif %}> Admin access
         </label>
       </p>
     </fieldset>

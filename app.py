@@ -10,17 +10,18 @@ from functools import wraps
 
 import pymysql
 import secrets
+from urllib.parse import quote
 
 
-conn = "mysql+pymysql://{0}:{1}@{2}/{3}".format(secrets.dbuser, secrets.dbpass, secrets.dbhost, secrets.dbname)
+# conn = "mysql+pymysql://{0}:{1}@{2}/{3}".format(secrets.dbuser, secrets.dbpass, secrets.dbhost, secrets.dbname)
 
-# Open database connection
-#dbhost = secrets.dbhost
-#dbuser = secrets.dbuser
-#dbpass = secrets.dbpass
-#dbname = secrets.dbname
+# # Open database connection
+# dbhost = secrets.dbhost
+# dbuser = secrets.dbuser
+# dbpass = secrets.dbpass
+# dbname = secrets.dbname
 
-#db = pymysql.connect(dbhost, dbuser, dbpass, dbname)
+# db = pymysql.connect(dbhost, dbuser, dbpass, dbname)
 
 app = Flask(__name__)
 
@@ -29,7 +30,7 @@ login.login_view = 'login'
 login.login_message_category = 'danger' # sets flash category for the default message 'Please log in to access this page.'
 
 
-app.config['SECRET_KEY']='SuperSecretKey'
+app.config['SECRET_KEY']= "JLKJJJO3IURYoiouolnojojouuoo=5y9y9youjuy952oohhbafdnoglhoho"
 # import os
 # = os.environ.get('SECRET_KEY')
 
@@ -42,7 +43,7 @@ class SQLAlchemy(_BaseSQLAlchemy):
 # <-- MWC
 
 
-app.config['SQLALCHEMY_DATABASE_URI'] = conn
+app.config['SQLALCHEMY_DATABASE_URI'] = ('mysql+pymysql://root:%s@localhost:3306/expenseDB' % quote('root'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # silence the deprecation warning
 db = SQLAlchemy(app)
 
@@ -55,7 +56,7 @@ class LoginForm(FlaskForm):
 
 
 class RegistrationForm(FlaskForm):
-    name = StringField('Name', validators=[DataRequired()])
+    # name = StringField('Name', validators=[DataRequired()])
     username = StringField('Username', validators=[DataRequired()])
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
@@ -68,7 +69,7 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('Please use a different username.')
 
     def validate_email(self, email):
-        user = User.query.filter_by(email=email.data).first()
+        user = User.query.filter_by(email_address=email.data).first()
         if user is not None:
             raise ValidationError('Please use a different email address.')
 
@@ -78,7 +79,7 @@ class NewUserForm(FlaskForm):
     email = StringField('Email: ', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     confirm = PasswordField('Repeat Password', validators=[DataRequired(), EqualTo('password')])
-    access = IntegerField('Access: ')
+    isadmin = IntegerField('Access: ')
     submit = SubmitField('Create User')
 
     def validate_username(self, username):
@@ -97,7 +98,7 @@ class UserDetailForm(FlaskForm):
     name = StringField('Name: ', validators=[DataRequired()])
     username = StringField('Username: ', validators=[DataRequired()])
     email = StringField('Email: ', validators=[DataRequired(), Email()])
-    access = IntegerField('Access: ')
+    isadmin = IntegerField('Access: ')
 
 class AccountDetailForm(FlaskForm):
     id = IntegerField('Id: ')
@@ -114,30 +115,30 @@ ACCESS = {
 }
 
 class User(UserMixin, db.Model):
-    __tablename__ = 'users'
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
-    email = db.Column(db.String(100))
+    # name = db.Column(db.String(100))
+    email_address = db.Column(db.String(100))
     username = db.Column(db.String(30))
     password_hash = db.Column(db.String(128))
-    access = db.Column(db.Integer)
+    isadmin = db.Column(db.Integer)
 
-    def __init__(self, name, email, username, access=ACCESS['guest']):
-        self.id = ''
-        self.name = name
-        self.email = email
+    def __init__(self, email_address, username, isadmin=ACCESS['guest']):
+        self.id = 3
+        # self.name = name
+        self.email_address = email_address
         self.username = username
         self.password_hash = ''
-        self.access = access
+        self.isadmin = isadmin
 
     def is_admin(self):
-        return self.access == ACCESS['admin']
+        return self.isadmin == ACCESS['admin']
 
     def is_user(self):
-        return self.access == ACCESS['user']
+        return self.isadmin == ACCESS['user']
 
     def allowed(self, access_level):
-        return self.access >= access_level
+        return self.isadmin >= access_level
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -196,7 +197,7 @@ def register():
         return redirect(url_for('index'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(name=form.name.data, username=form.username.data, email=form.email.data)
+        user = User(username=form.username.data, email_address=form.email.data)
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
@@ -243,15 +244,15 @@ def account():
 
     if form.validate_on_submit():
         user.name = form.name.data
-        user.email = form.email.data
+        user.email_address = form.email.data
         user.set_password(form.password.data)
 
         db.session.commit()
         flash('Your account has been updated.', 'success')
         return redirect(url_for('account'))
 
-    form.name.data = user.name
-    form.email.data = user.email
+    # form.name.data = user.name
+    form.email.data = user.email_address
 
     return render_template('account_detail.html', form=form, pageTitle='Your Account')
 
@@ -282,10 +283,10 @@ def user_detail(user_id):
     user = User.query.get_or_404(user_id)
     form = UserDetailForm()
     form.id.data = user.id
-    form.name.data = user.name
-    form.email.data = user.email
+    # form.name.data = user.name
+    form.email.data = user.email_address
     form.username.data = user.username
-    form.access.data = user.access
+    form.isadmin.data = user.isadmin
     return render_template('user_detail.html', form=form, pageTitle='User Details')
 
 # update user
@@ -339,7 +340,7 @@ def new_user():
     if request.method == 'POST' and form.validate_on_submit():
         user = User(name=form.name.data, username=form.username.data, email=form.email.data)
         user.set_password(form.password.data)
-        user.access = request.form['access_lvl']
+        user.isadmin = request.form['access_lvl']
         db.session.add(user)
         db.session.commit()
         flash('User has been successfully created.', 'success')
