@@ -124,7 +124,7 @@ class User(UserMixin, db.Model):
     isadmin = db.Column(db.Integer)
 
     def __init__(self, email_address, username, isadmin=ACCESS['guest']):
-        self.id = 3
+        # self.id = 3
         # self.name = name
         self.email_address = email_address
         self.username = username
